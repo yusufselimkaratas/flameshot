@@ -122,7 +122,7 @@ void ColorPickerEditor::addPreset()
         return;
     }
 
-    const int maxPresetsAllowed = 17;
+    const int maxPresetsAllowed = 36;
 
     if (m_colorList.size() >= maxPresetsAllowed) {
         QMessageBox::critical(
@@ -141,6 +141,16 @@ void ColorPickerEditor::deletePreset()
 {
     const int minPresetsAllowed = 3;
 
+    if (m_selectedIndex >= 0 && m_selectedIndex < m_colorList.size() &&
+        ColorPickerWidget::volyticaPalette().contains(
+          m_colorList.at(m_selectedIndex))) {
+        QMessageBox::information(
+          this,
+          tr("Volytica color"),
+          tr("Volytica colors stay in the palette."));
+        return;
+    }
+
     if (m_colorList.size() <= minPresetsAllowed) {
         QMessageBox::critical(
           this,
@@ -157,6 +167,17 @@ void ColorPickerEditor::deletePreset()
 void ColorPickerEditor::updatePreset()
 {
     QColor c = QColor(m_colorEdit->text());
+
+    if (m_selectedIndex >= 0 && m_selectedIndex < m_colorList.size() &&
+        ColorPickerWidget::volyticaPalette().contains(
+          m_colorList.at(m_selectedIndex))) {
+        m_colorEdit->setText(m_colorList.at(m_selectedIndex).name(QColor::HexRgb));
+        QMessageBox::information(
+          this,
+          tr("Volytica color"),
+          tr("Volytica colors stay in the palette."));
+        return;
+    }
 
     if (m_colorList.contains(c)) {
         m_colorEdit->setText(m_colorList[m_selectedIndex].name(QColor::HexRgb));

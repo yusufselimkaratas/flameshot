@@ -15,6 +15,7 @@
 #include "core/flameshot.h"
 #include "core/qguiappcurrentscreen.h"
 #include "tools/copy/copytool.h"
+#include "tools/zoom/zoomtool.h"
 #include "utils/abstractlogger.h"
 #include "utils/screengrabber.h"
 #include "utils/screenshotsaver.h"
@@ -1141,33 +1142,89 @@ void CaptureWidget::wheelEvent(QWheelEvent* e)
      * impossible to scroll. It's easier to calculate number of requests and do
      * not accept events faster that one in 200ms.
      * */
-    int toolSizeOffset = 0;
+    int delta = 0;
     if (qAbs(e->angleDelta().y()) >= MOUSE_WHEEL_TRESHOLD) {
-        auto const delta =
-          qMax(qMin(e->angleDelta().y() / MOUSE_WHEEL_TRESHOLD, 1), -1);
-        if (activeButtonTool() &&
-            activeButtonTool()->handleMouseWheelEvent(
-              delta, m_adjustmentButtonPressed, m_context)) {
-            this->repaint();
-            return;
-        }
-        toolSizeOffset = delta;
+        delta = qMax(qMin(e->angleDelta().y() / MOUSE_WHEEL_TRESHOLD, 1), -1);
     } else {
-        // touchpad scroll
         qint64 current = QDateTime::currentMSecsSinceEpoch();
-        if ((current - m_lastMouseWheel) > 200) {
-            if (e->angleDelta().y() > 0) {
-                toolSizeOffset = 1;
-            } else if (e->angleDelta().y() < 0) {
-                toolSizeOffset = -1;
-            }
-            m_lastMouseWheel = current;
-        } else {
+        if ((current - m_lastMouseWheel) <= 200) {
             return;
         }
+        if (e->angleDelta().y() > 0) {
+            delta = 1;
+        } else if (e->angleDelta().y() < 0) {
+            delta = -1;
+        }
+        m_lastMouseWheel = current;
+    }
+    if (delta == 0) {
+        return;
     }
 
-    setToolSize(m_context.toolSize + toolSizeOffset);
+    if (activeButtonTool() &&
+        activeButtonTool()->handleMouseWheelEvent(
+          delta, m_adjustmentButtonPressed, m_context)) {
+        this->repaint();
+        return;
+    }
+
+    // Zoom tool: the wheel sets the magnification, not the stroke width.
+    ZoomTool* zoomPrimary = nullptr;
+    QList<ZoomTool*> zoomTargets;
+    auto consider = [&](CaptureTool* tool) {
+        if (tool == nullptr || tool->type() != CaptureTool::TYPE_ZOOM) {
+            return;
+        }
+        auto* zoom = static_cast<ZoomTool*>(tool);
+        if (!zoomTargets.contains(zoom)) {
+            zoomTargets.append(zoom);
+        }
+    };
+    if (m_activeTool && m_activeTool->type() == CaptureTool::TYPE_ZOOM) {
+        zoomPrimary = static_cast<ZoomTool*>(m_activeTool.data());
+        consider(m_activeTool);
+        consider(activeButtonTool());
+    } else if (activeToolObject() &&
+               activeToolObject()->type() == CaptureTool::TYPE_ZOOM) {
+        zoomPrimary = static_cast<ZoomTool*>(activeToolObject().data());
+        consider(activeToolObject());
+    } else if (activeButtonTool() &&
+               activeButtonTool()->type() == CaptureTool::TYPE_ZOOM) {
+        consider(activeButtonTool());
+        const auto objects = m_captureToolObjects.captureToolObjects();
+        for (int i = objects.size() - 1; i >= 0; --i) {
+            if (objects.at(i) &&
+                objects.at(i)->type() == CaptureTool::TYPE_ZOOM) {
+                zoomPrimary = static_cast<ZoomTool*>(objects.at(i).data());
+                consider(objects.at(i));
+                break;
+            }
+        }
+        if (zoomPrimary == nullptr) {
+            zoomPrimary = static_cast<ZoomTool*>(activeButtonTool());
+        }
+    }
+    if (zoomPrimary != nullptr) {
+        bool touchedCommitted = false;
+        for (ZoomTool* zoom : zoomTargets) {
+            zoom->handleMouseWheelEvent(delta, false, m_context);
+            if (zoom != m_activeTool && zoom != activeButtonTool()) {
+                touchedCommitted = true;
+            }
+        }
+        if (touchedCommitted) {
+            if (!m_existingObjectIsChanged) {
+                m_captureToolObjectsBackup = m_captureToolObjects;
+                m_existingObjectIsChanged = true;
+            }
+            drawToolsData();
+        }
+        m_notifierBox->showMessage(zoomPrimary->zoomLabel());
+        repaint();
+        return;
+    }
+
+    setToolSize(m_context.toolSize + delta);
 }
 
 void CaptureWidget::resizeEvent(QResizeEvent* e)

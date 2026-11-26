@@ -51,6 +51,8 @@ public:
         TYPE_INVERT = 22,
         TYPE_ACCEPT = 23,
         TYPE_CANCEL = 24,
+        // Magnified inset of a drawn region, linked back to that region.
+        TYPE_ZOOM = 25,
     };
     Q_ENUM(Type);
 

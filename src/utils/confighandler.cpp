@@ -123,7 +123,8 @@ static QMap<class QString, QSharedPointer<ValueHandler>>
     OPTION("drawRectangleSize"           ,LowerBoundedInt    ( 1, 1          )),
     OPTION("drawMarkerSize"              ,LowerBoundedInt    ( 1, 5          )),
     OPTION("drawColor"                   ,Color              ( Qt::red       )),
-    OPTION("userColors"                  ,UserColors         ( 3, 17         )),
+    // Room for the pinned Volytica swatches plus the user's own presets.
+    OPTION("userColors"                  ,UserColors         ( 3, 36         )),
     OPTION("ignoreUpdateToVersion"       ,String             ( ""            )),
     OPTION("keepOpenAppLauncher"         ,Bool               ( false         )),
     OPTION("fontFamily"                  ,String             ( ""            )),
@@ -179,6 +180,7 @@ static QMap<QString, QSharedPointer<KeySequence>> recognizedShortcuts = {
 #endif
     SHORTCUT("TYPE_PIXELATE"            ,   "B"                     ),
     SHORTCUT("TYPE_INVERT"              ,   "I"                     ),
+    SHORTCUT("TYPE_ZOOM"                ,   "Z"                     ),
     SHORTCUT("TYPE_REDO"                ,   "Ctrl+Shift+Z"          ),
     SHORTCUT("TYPE_TEXT"                ,   "T"                     ),
     SHORTCUT("TYPE_TOGGLE_PANEL"        ,   "Space"                 ),

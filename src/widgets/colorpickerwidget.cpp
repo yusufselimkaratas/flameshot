@@ -26,6 +26,61 @@ const QVector<QColor>& ColorPickerWidget::getDefaultLargeColorPalette()
     return defaultLargeColorPalette;
 }
 
+const QVector<QColor>& ColorPickerWidget::volyticaPalette()
+{
+    // From the Volytica mermaid theme (volytica.com): navy, orange, the
+    // light fills, muted gray, and the two extra pie colours.
+    static const QVector<QColor> palette = {
+        QColor(QStringLiteral("#1f4e78")), QColor(QStringLiteral("#ff5f39")),
+        QColor(QStringLiteral("#6f9fc8")), QColor(QStringLiteral("#ffa68f")),
+        QColor(QStringLiteral("#808285")), QColor(QStringLiteral("#555555")),
+        QColor(QStringLiteral("#deebf7")), QColor(QStringLiteral("#d1e8f0")),
+        QColor(QStringLiteral("#fff1ec")), QColor(QStringLiteral("#fafafa")),
+        QColor(QStringLiteral("#ffffff")),
+    };
+    return palette;
+}
+
+QVector<QColor> ColorPickerWidget::ensureVolyticaColors(QVector<QColor> colors)
+{
+    auto hasColor = [](const QVector<QColor>& list, const QColor& needle) {
+        for (const QColor& existing : list) {
+            if (existing.isValid() && existing.rgb() == needle.rgb()) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    // Keep the rainbow "picker" swatch in front when it is there.
+    int insertAt = (!colors.isEmpty() && !colors.first().isValid()) ? 1 : 0;
+    for (const QColor& brand : volyticaPalette()) {
+        if (hasColor(colors, brand)) {
+            continue;
+        }
+        colors.insert(insertAt, brand);
+        ++insertAt;
+    }
+    return colors;
+}
+
+namespace {
+
+QVector<QColor> paletteWithVolytica(const QVector<QColor>& extra)
+{
+    QVector<QColor> colors;
+    colors << QColor();
+    colors += ColorPickerWidget::volyticaPalette();
+    for (const QColor& color : extra) {
+        if (!colors.contains(color)) {
+            colors << color;
+        }
+    }
+    return colors;
+}
+
+} // namespace
+
 void ColorPickerWidget::paintEvent(QPaintEvent* e)
 {
     QPainter painter(this);
@@ -147,14 +202,14 @@ void ColorPickerWidget::initColorPicker()
     }
 }
 
-QVector<QColor> ColorPickerWidget::defaultSmallColorPalette = {
-    QColor(),      Qt::darkRed, Qt::red,  Qt::yellow,  Qt::green,
-    Qt::darkGreen, Qt::cyan,    Qt::blue, Qt::magenta, Qt::darkMagenta
-};
+QVector<QColor> ColorPickerWidget::defaultSmallColorPalette = paletteWithVolytica({
+  Qt::darkRed, Qt::red,     Qt::yellow, Qt::green,   Qt::darkGreen,
+  Qt::cyan,    Qt::blue,    Qt::magenta, Qt::darkMagenta,
+});
 
-QVector<QColor> ColorPickerWidget::defaultLargeColorPalette = {
-    QColor(),        Qt::white,     Qt::red,       Qt::green,     Qt::blue,
-    Qt::black,       Qt::darkRed,   Qt::darkGreen, Qt::darkBlue,  Qt::darkGray,
-    Qt::cyan,        Qt::magenta,   Qt::yellow,    Qt::lightGray, Qt::darkCyan,
-    Qt::darkMagenta, Qt::darkYellow
-};
+QVector<QColor> ColorPickerWidget::defaultLargeColorPalette = paletteWithVolytica({
+  Qt::white,   Qt::red,     Qt::green,  Qt::blue,      Qt::black,
+  Qt::darkRed, Qt::darkGreen, Qt::darkBlue, Qt::darkGray, Qt::cyan,
+  Qt::magenta, Qt::yellow,  Qt::lightGray, Qt::darkCyan, Qt::darkMagenta,
+  Qt::darkYellow,
+});

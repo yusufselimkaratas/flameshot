@@ -439,7 +439,8 @@ QVariant UserColors::process(const QVariant& val)
         }
     }
 
-    return QVariant::fromValue(colors);
+    return QVariant::fromValue(
+      ColorPickerWidget::ensureVolyticaColors(colors));
 }
 
 QVariant UserColors::fallback()

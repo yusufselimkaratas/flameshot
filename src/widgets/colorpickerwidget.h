@@ -13,6 +13,10 @@ public:
 
     static const QVector<QColor>& getDefaultSmallColorPalette();
     static const QVector<QColor>& getDefaultLargeColorPalette();
+    // Volytica brand colours. These stay in the wheel even if the user
+    // edits the preset list.
+    static const QVector<QColor>& volyticaPalette();
+    static QVector<QColor> ensureVolyticaColors(QVector<QColor> colors);
     void updateWidget();
     void updateSelection(int index);
 
